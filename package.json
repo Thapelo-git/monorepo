@@ -7,8 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-     "deploy:api": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
-
+    "deploy:api": "powershell -ExecutionPolicy Bypass -File deploy.ps1"
   },
   "devDependencies": {
     "@types/node": "^22.19.17",
