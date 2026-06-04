@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/layout/Sidebar";
 
 export default function PlannerWeddings() {
@@ -60,7 +61,6 @@ export default function PlannerWeddings() {
       <Sidebar />
 
       <main className="ml-64 flex-1">
-        {/* Top Bar */}
         <div className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-20">
           <div>
             <h1 className="font-serif text-xl text-[#1f2937]">All Weddings</h1>
@@ -73,16 +73,14 @@ export default function PlannerWeddings() {
             >
               + New Wedding
             </button>
-            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">🔔</button>
+            <button className="p-2 rounded-lg hover:bg-gray-100">🔔</button>
             <div className="w-8 h-8 rounded-full bg-[#1B2B4B] text-white flex items-center justify-center text-xs font-semibold">
               {user.name?.slice(0, 2).toUpperCase()}
             </div>
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6">
-          {/* New Wedding Form */}
           {showNewWeddingForm && (
             <div className="bg-white rounded-xl p-6 mb-6 border border-gray-100">
               <h3 className="font-semibold text-gray-900 mb-4">Create New Wedding</h3>
@@ -133,7 +131,6 @@ export default function PlannerWeddings() {
             </div>
           )}
 
-          {/* Weddings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {weddings.map((wedding) => (
               <div
@@ -154,7 +151,6 @@ export default function PlannerWeddings() {
 
                 <p className="text-sm text-gray-600 mb-4">{wedding.venue}</p>
 
-                {/* Budget Bar */}
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-medium text-gray-600">Budget</span>
@@ -173,7 +169,6 @@ export default function PlannerWeddings() {
                   </p>
                 </div>
 
-                {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-gray-50 rounded-lg p-2 text-center">
                     <div className="text-sm font-semibold text-[#1B2B4B]">{wedding.couples}</div>
@@ -189,9 +184,12 @@ export default function PlannerWeddings() {
                   </div>
                 </div>
 
-                <button className="w-full px-4 py-2 bg-[#1B2B4B] text-white rounded-lg font-medium hover:bg-[#0f1a2e] transition-colors text-sm">
-                  View Wedding
-                </button>
+                <Link
+                  href={`/planner/weddings/${wedding.id}`}
+                  className="w-full block px-4 py-2 bg-[#1B2B4B] text-white rounded-lg font-medium hover:bg-[#0f1a2e] transition-colors text-center text-sm"
+                >
+                  View Wedding Board
+                </Link>
               </div>
             ))}
           </div>
