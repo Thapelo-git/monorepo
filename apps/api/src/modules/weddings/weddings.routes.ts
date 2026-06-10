@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "database";
+import { prisma } from "@repo/database";
 import { verifyToken, AuthRequest } from "../../middleware/auth.middleware";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.post("/", verifyToken, async (req: AuthRequest, res) => {
   try {

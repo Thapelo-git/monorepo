@@ -1,10 +1,9 @@
 import { Router } from "express";
 import * as bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "database";
+import { prisma } from "@repo/database";
 
 const router = Router();
-const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 router.post("/register", async (req, res) => {
