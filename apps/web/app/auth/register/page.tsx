@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -10,16 +10,12 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "couple",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,25 +28,32 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 500));
+    try {
+      const res = await fetch("http://localhost:3001/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    const newUser = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-    };
+      const data = await res.json();
 
-    localStorage.setItem("user", JSON.stringify(newUser));
-    localStorage.setItem("token", "mock-token-" + newUser.id);
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        setLoading(false);
+        return;
+      }
 
-    if (formData.role === "couple") {
-      router.push("/couple/board");
-    } else if (formData.role === "planner") {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       router.push("/planner/dashboard");
-    } else {
-      router.push("/vendor/dashboard");
+    } catch {
+      setError("Could not connect to server. Make sure the API is running.");
+      setLoading(false);
     }
   };
 
@@ -76,7 +79,7 @@ export default function RegisterPage() {
           </h1>
 
           <p className="text-white/60 text-sm leading-relaxed max-w-sm">
-            Join thousands of couples, planners, and vendors building beautiful weddings together.
+            Create your planner account and start managing weddings from day one.
           </p>
         </div>
       </div>
@@ -90,7 +93,7 @@ export default function RegisterPage() {
             </div>
 
             <h2 className="font-serif text-3xl text-[#1f2937] mb-1">Create account</h2>
-            <p className="text-sm text-gray-500 mb-6">Join WeddingFlow today</p>
+            <p className="text-sm text-gray-500 mb-6">Planner registration</p>
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -134,6 +137,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
+                  minLength={6}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2B4B]/30"
                 />
               </div>
@@ -149,20 +153,6 @@ export default function RegisterPage() {
                   required
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2B4B]/30"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">I am a:</label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1B2B4B]/30"
-                >
-                  <option value="couple">Couple</option>
-                  <option value="planner">Wedding Planner</option>
-                  <option value="vendor">Vendor</option>
-                </select>
               </div>
 
               <button

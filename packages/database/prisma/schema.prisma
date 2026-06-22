@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/client"
 }
 
 datasource db {
@@ -7,123 +8,159 @@ datasource db {
 }
 
 model User {
-  id    String @id @default(uuid())
-  name  String
-  email String @unique
+  id       String  @id @default(uuid())
+  name     String
+  email    String  @unique
   password String
-  role  String
-  avatar String?
-  
-  plannedWeddings Wedding[] @relation("planner")
-  createdTasks    Task[] @relation("creator")
-  assignedTasks   Task[] @relation("assignee")
-  chatMessages    ChatMessage[]
-  notifications   Notification[]
-  
+  role     String  // "planner" | "couple"
+  avatar   String?
+
+  plannedWeddings    Wedding[]       @relation("planner")
+  weddingMemberships WeddingMember[]
+  createdTasks       Task[]          @relation("creator")
+  assignedTasks      Task[]          @relation("assignee")
+  chatMessages       ChatMessage[]
+  notifications      Notification[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Wedding {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   weddingDate DateTime
   venue       String
-  budget      Decimal @db.Decimal(15,2)
-  spentAmount Decimal @default(0) @db.Decimal(15,2)
-  status      String @default("planning")
-  
-  plannerId   String
-  planner     User @relation("planner", fields: [plannerId], references: [id], onDelete: Cascade)
-  tasks       Task[]
-  vendors     Vendor[]
-  chatMessages ChatMessage[]
+  budget      Decimal @db.Decimal(15, 2)
+  spentAmount Decimal @default(0) @db.Decimal(15, 2)
+  status      String  @default("planning")
+
+  plannerId     String
+  planner       User            @relation("planner", fields: [plannerId], references: [id], onDelete: Cascade)
+  members       WeddingMember[]
+  invites       WeddingInvite[]
+  tasks         Task[]
+  vendors       Vendor[]
+  chatMessages  ChatMessage[]
   notifications Notification[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([plannerId])
 }
 
+model WeddingMember {
+  id   String @id @default(uuid())
+  role String @default("couple")
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weddingId])
+  @@index([weddingId])
+  @@index([userId])
+}
+
+model WeddingInvite {
+  id    String  @id @default(uuid())
+  token String  @unique @default(uuid())
+  email String
+  role  String  @default("couple")
+  used  Boolean @default(false)
+
+  weddingId String
+  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([weddingId])
+}
+
 model Task {
-  id          String @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
-  status      String @default("todo")
-  priority    String @default("medium")
+  status      String    @default("todo")
+  priority    String    @default("medium")
   dueDate     DateTime
-  
-  weddingId   String
-  wedding     Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
-  createdById String
-  createdBy   User @relation("creator", fields: [createdById], references: [id])
+
+  weddingId    String
+  wedding      Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  createdById  String
+  createdBy    User    @relation("creator", fields: [createdById], references: [id])
   assignedToId String?
-  assignedTo  User? @relation("assignee", fields: [assignedToId], references: [id])
-  
+  assignedTo   User?   @relation("assignee", fields: [assignedToId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([weddingId])
   @@index([createdById])
 }
 
 model Vendor {
-  id      String @id @default(uuid())
-  name    String
+  id       String  @id @default(uuid())
+  name     String
   category String
-  email   String
-  phone   String?
-  
+  email    String
+  phone    String?
+
   weddingId String
-  wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  wedding   Wedding   @relation(fields: [weddingId], references: [id], onDelete: Cascade)
   invoices  Invoice[]
-  
+
   createdAt DateTime @default(now())
-  
+
   @@index([weddingId])
 }
 
 model Invoice {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   description String
-  amount      Decimal @db.Decimal(15,2)
-  status      String @default("pending")
-  
-  vendorId    String
-  vendor      Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  weddingId   String
-  
-  uploadedAt  DateTime @default(now())
-  approvedAt  DateTime?
+  amount      Decimal @db.Decimal(15, 2)
+  status      String  @default("pending")
+
+  vendorId  String
+  vendor    Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  weddingId String
+
+  uploadedAt DateTime  @default(now())
+  approvedAt DateTime?
 }
 
 model ChatMessage {
   id        String @id @default(uuid())
   text      String
   userId    String
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   weddingId String
   wedding   Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  
+
   @@index([weddingId])
   @@index([userId])
 }
 
 model Notification {
-  id        String @id @default(uuid())
-  title     String
-  message   String
-  type      String
-  read      Boolean @default(false)
-  
+  id      String  @id @default(uuid())
+  title   String
+  message String
+  type    String
+  read    Boolean @default(false)
+
   userId    String
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   weddingId String?
   wedding   Wedding? @relation(fields: [weddingId], references: [id], onDelete: SetNull)
-  
+
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
 }

@@ -1,261 +1,242 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
+import { apiFetch } from "@/lib/api";
+import TaskModal from "@/components/TaskModal";
+
+const COLUMNS = [
+  { id: "todo", label: "To Do", color: "#b8976a" },
+  { id: "inprogress", label: "In Progress", color: "#1B2B4B" },
+  { id: "waiting", label: "Waiting", color: "#6b6b4a" },
+  { id: "completed", label: "Completed", color: "#4a8b6b" },
+];
 
 export default function CoupleBoard() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [wedding, setWedding] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [draggedTask, setDraggedTask] = useState<any>(null);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "", dueDate: "", priority: "medium" });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    if (!userData) { router.push("/auth/login"); return; }
+    setUser(JSON.parse(userData));
 
-    setWedding({
-      id: "1",
-      name: "John & Sarah Wedding",
-      date: "2026-06-15",
-      venue: "Garden Palace, Sandton",
-      budget: 250000,
-      spent: 43000,
-    });
-
-    setTasks([
-      { id: "1", title: "Book venue", description: "Confirm booking", status: "completed", priority: "high", dueDate: "2026-04-15", assignedTo: "Planner" },
-      { id: "2", title: "Finalize menu", description: "Review menu", status: "inprogress", priority: "high", dueDate: "2026-05-14", assignedTo: "You" },
-      { id: "3", title: "Flowers", description: "Choose arrangements", status: "todo", priority: "medium", dueDate: "2026-05-20", assignedTo: "You" },
-      { id: "4", title: "Send invites", description: "Post invitations", status: "waiting", priority: "high", dueDate: "2026-05-21", assignedTo: "Planner" },
-    ]);
+    apiFetch("/weddings")
+      .then((ws: any[]) => {
+        const w = ws[0];
+        if (!w) return;
+        setWedding(w);
+        setTasks(w.tasks ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!user || !wedding) return null;
-
-  const columns = [
-    { id: "todo", label: "To Do", color: "#b8976a" },
-    { id: "inprogress", label: "In Progress", color: "#1B2B4B" },
-    { id: "waiting", label: "Waiting", color: "#6b6b4a" },
-    { id: "completed", label: "Completed", color: "#4a8b6b" },
-  ];
-
-  const getTasksByStatus = (status: string) => tasks.filter((t) => t.status === status);
-
-  const handleDragStart = (task: any) => {
-    setDraggedTask(task);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (status: string) => {
-    if (!draggedTask) return;
-    setTasks(
-      tasks.map((t) =>
-        t.id === draggedTask.id ? { ...t, status } : t
-      )
-    );
+  async function handleDrop(status: string) {
+    if (!draggedTask || draggedTask.status === status) { setDraggedTask(null); return; }
+    const prev = tasks;
+    setTasks(tasks.map((t: any) => t.id === draggedTask.id ? { ...t, status } : t));
     setDraggedTask(null);
-  };
+    try {
+      await apiFetch(`/tasks/${draggedTask.id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+    } catch {
+      setTasks(prev);
+    }
+  }
 
-  const handleAddTask = () => {
-    if (!newTask.title) return;
-    setTasks([
-      ...tasks,
-      {
-        id: Date.now().toString(),
-        title: newTask.title,
-        description: newTask.description,
-        status: "todo",
-        priority: newTask.priority,
-        dueDate: newTask.dueDate,
-        assignedTo: "You",
-      },
-    ]);
-    setNewTask({ title: "", description: "", dueDate: "", priority: "medium" });
-    setShowAddTask(false);
-  };
+  async function handleAddTask(task: { title: string; description: string; dueDate: string; priority: string }) {
+    if (!wedding) throw new Error("No wedding found");
+    const created = await apiFetch("/tasks", {
+      method: "POST",
+      body: JSON.stringify({ ...task, weddingId: wedding.id, status: "todo" }),
+    });
+    setTasks((prev) => [...prev, created]);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-[#f7f3ee]">
+        <Sidebar />
+        <main className="ml-64 flex-1 p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-24 bg-gray-200 rounded-xl" />
+            <div className="flex gap-6">
+              {[1, 2, 3, 4].map((i) => <div key={i} className="w-80 h-96 bg-gray-100 rounded-lg flex-shrink-0" />)}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!wedding) {
+    return (
+      <div className="flex min-h-screen bg-[#f7f3ee]">
+        <Sidebar />
+        <main className="ml-64 flex-1 p-12 text-center">
+          <p className="text-gray-500 text-lg">No wedding board found.</p>
+          <p className="text-gray-400 text-sm mt-2">Ask your wedding planner to send you an invite.</p>
+        </main>
+      </div>
+    );
+  }
+
+  const daysUntil = Math.ceil(
+    (new Date(wedding.weddingDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+  const spent = parseFloat(wedding.spentAmount ?? 0);
+  const completedCount = tasks.filter((t: any) => t.status === "completed").length;
 
   return (
     <div className="flex min-h-screen bg-[#f7f3ee]">
       <Sidebar />
-
       <main className="ml-64 flex-1">
+        {/* Top bar */}
         <div className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-20">
           <div>
             <h1 className="font-serif text-xl text-[#1f2937]">{wedding.name}</h1>
             <p className="text-xs text-gray-400 -mt-0.5">{wedding.venue}</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg hover:bg-gray-100">🔔</button>
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1B2B4B] to-[#8b4a6b] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+            >
+              <span className="text-base leading-none">+</span> Add Task
+            </button>
             <div className="w-8 h-8 rounded-full bg-[#1B2B4B] text-white flex items-center justify-center text-xs font-semibold">
-              {user.name?.slice(0, 2).toUpperCase()}
+              {user?.name?.slice(0, 2).toUpperCase()}
             </div>
           </div>
         </div>
 
         <div className="p-6">
-          <div className="bg-gradient-to-r from-[#1B2B4B] to-[#8b4a6b] text-white rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-serif text-2xl mb-2">Wedding Date: {wedding.date}</h2>
-                <p className="text-white/80">Days until wedding: 12</p>
-              </div>
-              <div className="text-right">
-                <p className="text-white/80 text-sm">Budget Spent</p>
-                <p className="text-3xl font-semibold">R{wedding.spent.toLocaleString()}</p>
-              </div>
+          {/* Banner */}
+          <div className="bg-gradient-to-r from-[#1B2B4B] to-[#8b4a6b] text-white rounded-2xl p-6 mb-6 flex flex-wrap gap-6 items-center">
+            <div className="flex-1 min-w-40">
+              <p className="text-white/60 text-xs mb-1">Wedding date</p>
+              <p className="font-serif text-xl">
+                {new Date(wedding.weddingDate).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+              <p className="text-white/70 text-sm mt-1">
+                {daysUntil > 0 ? `${daysUntil} days to go` : "Today is the day!"}
+              </p>
+            </div>
+            <div className="flex-1 min-w-40">
+              <p className="text-white/60 text-xs mb-1">Budget spent</p>
+              <p className="font-serif text-xl">R{spent.toLocaleString()}</p>
+            </div>
+            <div className="flex-1 min-w-40">
+              <p className="text-white/60 text-xs mb-1">Tasks done</p>
+              <p className="font-serif text-xl">{completedCount} <span className="text-white/60 text-sm">/ {tasks.length}</span></p>
             </div>
           </div>
 
-          <div className="mb-6">
-            <button
-              onClick={() => setShowAddTask(!showAddTask)}
-              className="px-4 py-2 bg-gradient-to-r from-[#1B2B4B] to-[#8b4a6b] text-white rounded-lg font-medium hover:shadow-lg"
-            >
-              + Add Task
-            </button>
-          </div>
-
-          {showAddTask && (
-            <div className="bg-white rounded-xl p-6 mb-6 border border-gray-100">
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Task title"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B2B4B]/30"
-                />
-                <textarea
-                  placeholder="Description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B2B4B]/30"
-                  rows={2}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="date"
-                    value={newTask.dueDate}
-                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                    className="px-4 py-2 border border-gray-200 rounded-lg"
-                  />
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                    className="px-4 py-2 border border-gray-200 rounded-lg"
+          {/* Kanban */}
+          <div className="flex gap-5 overflow-x-auto pb-4">
+            {COLUMNS.map((col) => {
+              const colTasks = tasks.filter((t: any) => t.status === col.id);
+              return (
+                <div key={col.id} className="w-72 flex-shrink-0">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: col.color }} />
+                    <h3 className="font-semibold text-gray-700 text-sm">{col.label}</h3>
+                    <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{colTasks.length}</span>
+                  </div>
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDrop(col.id)}
+                    className="min-h-96 rounded-xl p-2 space-y-2"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleAddTask}
-                    className="flex-1 px-4 py-2 bg-[#1B2B4B] text-white rounded-lg font-medium"
-                  >
-                    Add Task
-                  </button>
-                  <button
-                    onClick={() => setShowAddTask(false)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-6 overflow-x-auto pb-4">
-            {columns.map((col) => (
-              <div key={col.id} className="w-80 flex-shrink-0">
-                <div className="mb-4">
-                  <h3 className="font-semibold text-gray-700 text-sm">
-                    {col.label} ({getTasksByStatus(col.id).length})
-                  </h3>
-                </div>
-                <div
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(col.id)}
-                  className="min-h-96 bg-gray-50 rounded-lg p-3 space-y-3"
-                >
-                  {getTasksByStatus(col.id).map((task) => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={() => handleDragStart(task)}
-                      onClick={() => setSelectedTask(task)}
-                      className="bg-white rounded-lg p-3 cursor-move hover:shadow-md border-l-4"
-                      style={{ borderLeftColor: col.color }}
-                    >
-                      <p className="font-medium text-sm text-gray-800 mb-1">{task.title}</p>
-                      <p className="text-xs text-gray-500 mb-2">{task.description}</p>
-                      <div className="flex justify-between">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded font-medium"
-                          style={{
-                            background:
-                              task.priority === "high"
-                                ? "#fee2e2"
-                                : task.priority === "medium"
-                                ? "#fef3c7"
-                                : "#f0fdf4",
-                            color:
-                              task.priority === "high"
-                                ? "#991b1b"
-                                : task.priority === "medium"
-                                ? "#92400e"
-                                : "#166534",
-                          }}
-                        >
-                          {task.priority}
-                        </span>
-                        <span className="text-xs text-gray-500">{task.dueDate}</span>
+                    {colTasks.length === 0 && (
+                      <div className="border-2 border-dashed border-gray-200 rounded-xl h-24 flex items-center justify-center">
+                        <p className="text-xs text-gray-300">Drop here</p>
                       </div>
-                    </div>
-                  ))}
+                    )}
+                    {colTasks.map((task: any) => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={() => setDraggedTask(task)}
+                        onClick={() => setSelectedTask(task)}
+                        className="bg-white rounded-xl p-4 cursor-move hover:shadow-md hover:-translate-y-0.5 border border-gray-100 border-l-4 transition-all"
+                        style={{ borderLeftColor: col.color }}
+                      >
+                        <p className="font-medium text-sm text-gray-800 mb-1 leading-snug">{task.title}</p>
+                        {task.description && (
+                          <p className="text-xs text-gray-400 mb-3 line-clamp-2">{task.description}</p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            task.priority === "high" ? "bg-rose-100 text-rose-700" :
+                            task.priority === "medium" ? "bg-amber-100 text-amber-700" :
+                            "bg-emerald-100 text-emerald-700"
+                          }`}>
+                            {task.priority}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(task.dueDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
 
+      {/* Add Task Modal */}
+      <TaskModal
+        open={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        onAdd={handleAddTask}
+      />
+
+      {/* Task detail bottom sheet */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => setSelectedTask(null)}>
-          <div className="bg-white w-full max-w-sm rounded-t-2xl p-6 slide-in-right">
-            <h3 className="font-serif text-2xl text-gray-900 mb-4">{selectedTask.title}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600">Description</label>
-                <p className="text-sm text-gray-700 mt-1">{selectedTask.description}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600">Due Date</label>
-                  <p className="text-sm text-gray-700 mt-1">{selectedTask.dueDate}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600">Priority</label>
-                  <p className="text-sm text-gray-700 mt-1 capitalize">{selectedTask.priority}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedTask(null)}
-                className="w-full px-4 py-2 bg-[#1B2B4B] text-white rounded-lg font-medium mt-6"
-              >
-                Close
-              </button>
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center"
+          onClick={() => setSelectedTask(null)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-t-2xl p-6 shadow-2xl"
+            style={{ animation: "slideUp 0.18s ease-out" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="font-serif text-2xl text-gray-900 flex-1 pr-4">{selectedTask.title}</h3>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${
+                selectedTask.priority === "high" ? "bg-rose-100 text-rose-700" :
+                selectedTask.priority === "medium" ? "bg-amber-100 text-amber-700" :
+                "bg-emerald-100 text-emerald-700"
+              }`}>
+                {selectedTask.priority}
+              </span>
             </div>
+            {selectedTask.description && (
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">{selectedTask.description}</p>
+            )}
+            <p className="text-sm text-gray-400 mb-6">
+              📅 Due {new Date(selectedTask.dueDate).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <button
+              onClick={() => setSelectedTask(null)}
+              className="w-full py-3 bg-[#1B2B4B] text-white rounded-xl font-medium"
+            >
+              Close
+            </button>
           </div>
+          <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
         </div>
       )}
     </div>

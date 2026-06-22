@@ -14,7 +14,7 @@
   "scripts": {
     "type-check": "tsc --noEmit",
     "generate": "prisma generate --schema ./prisma/schema.prisma",
-    "build": "prisma generate && tsc && shx cp -r generated dist/generated",
+    "build": "prisma generate && tsc && shx rm -rf dist/generated && shx cp -r generated dist/generated",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"

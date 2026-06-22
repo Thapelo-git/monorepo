@@ -122,9 +122,99 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
+  name: 'name',
   email: 'email',
+  password: 'password',
+  role: 'role',
+  avatar: 'avatar',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WeddingScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  weddingDate: 'weddingDate',
+  venue: 'venue',
+  budget: 'budget',
+  spentAmount: 'spentAmount',
+  status: 'status',
+  plannerId: 'plannerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WeddingMemberScalarFieldEnum = {
+  id: 'id',
+  role: 'role',
+  userId: 'userId',
+  weddingId: 'weddingId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.WeddingInviteScalarFieldEnum = {
+  id: 'id',
+  token: 'token',
+  email: 'email',
+  role: 'role',
+  used: 'used',
+  weddingId: 'weddingId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  priority: 'priority',
+  dueDate: 'dueDate',
+  weddingId: 'weddingId',
+  createdById: 'createdById',
+  assignedToId: 'assignedToId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VendorScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  category: 'category',
+  email: 'email',
+  phone: 'phone',
+  weddingId: 'weddingId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.InvoiceScalarFieldEnum = {
+  id: 'id',
+  description: 'description',
+  amount: 'amount',
+  status: 'status',
+  vendorId: 'vendorId',
+  weddingId: 'weddingId',
+  uploadedAt: 'uploadedAt',
+  approvedAt: 'approvedAt'
+};
+
+exports.Prisma.ChatMessageScalarFieldEnum = {
+  id: 'id',
+  text: 'text',
+  userId: 'userId',
+  weddingId: 'weddingId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  message: 'message',
+  type: 'type',
+  read: 'read',
+  userId: 'userId',
+  weddingId: 'weddingId',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -137,9 +227,22 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+
 
 exports.Prisma.ModelName = {
-  User: 'User'
+  User: 'User',
+  Wedding: 'Wedding',
+  WeddingMember: 'WeddingMember',
+  WeddingInvite: 'WeddingInvite',
+  Task: 'Task',
+  Vendor: 'Vendor',
+  Invoice: 'Invoice',
+  ChatMessage: 'ChatMessage',
+  Notification: 'Notification'
 };
 
 /**
