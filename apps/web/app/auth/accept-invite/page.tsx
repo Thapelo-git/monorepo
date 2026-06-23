@@ -26,7 +26,8 @@ function AcceptInviteContent() {
       setLoading(false);
       return;
     }
-    fetch(`http://localhost:3001/api/auth/invite/${token}`)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    fetch(`${API_URL}/api/auth/invite/${token}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
@@ -48,7 +49,8 @@ function AcceptInviteContent() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("http://localhost:3001/api/auth/accept-invite", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const res = await fetch(`${API_URL}/api/auth/accept-invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, name, password }),

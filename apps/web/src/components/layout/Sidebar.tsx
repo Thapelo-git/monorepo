@@ -17,7 +17,7 @@ import {
   Gem
 } from "lucide-react";
 
-const API = "http://localhost:3001/api";
+const API = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "http://localhost:3001/api";
 
 interface NavLink {
   href: string;
