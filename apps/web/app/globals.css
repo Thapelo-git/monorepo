@@ -1,113 +1,66 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
+
+/* Override built-in dark variant to use class-based (not media query) */
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   --primary: #1B2B4B;
   --primary-dark: #0f1a2e;
   --accent: #00AEAE;
-  --accent-light: #4dd0d0;
   --blush: #e8b4b8;
-  --ivory: #f9f5e8;
   --gold: #b8976a;
   --deep-rose: #8b4a6b;
-  --charcoal: #2d2424;
-  --bg-light: #f7f3ee;
-  --bg-white: #ffffff;
-  --border: #e5e7eb;
-  --border-light: #f3f4f6;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --error: #dc2626;
-  --success: #22c55e;
-  --warning: #f59e0b;
+
+  --bg:      #f7f3ee;
+  --surface: #ffffff;
+  --border:  #e5e7eb;
+  --text:    #1f2937;
+  --muted:   #6b7280;
+}
+
+.dark {
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --border:  #30363d;
+  --text:    #e6edf3;
+  --muted:   #8b949e;
 }
 
 @layer base {
-  html {
-    font-size: 16px;
-  }
-
-  body {
-    @apply bg-[#f7f3ee] text-[#1f2937];
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-semibold leading-tight;
-  }
-
-  h1 {
-    @apply text-4xl;
-  }
-
-  h2 {
-    @apply text-3xl;
-  }
-
-  h3 {
-    @apply text-2xl;
-  }
-
-  a {
-    @apply text-[#00AEAE] no-underline transition-colors hover:text-[#4dd0d0];
-  }
-
-  button {
-    @apply transition-all;
-  }
+  html { font-size: 16px; }
+  /* Do NOT set body background/color here — pages declare their own */
 }
+
+/* Dark mode surface overrides — avoids touching every component */
+.dark .dm-bg    { background-color: var(--bg)      !important; }
+.dark .dm-card  { background-color: var(--surface)  !important; border-color: var(--border) !important; }
+.dark .dm-text  { color: var(--text)  !important; }
+.dark .dm-muted { color: var(--muted) !important; }
 
 @layer components {
-  .card {
-    @apply bg-white rounded-xl border border-gray-100 shadow-sm;
-  }
+  .card { @apply bg-white dark:bg-[#161b22] rounded-xl border border-gray-100 dark:border-[#30363d] shadow-sm; }
 }
 
+/* Scrollbar */
 @supports (scrollbar-gutter: stable) {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #b8976a;
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #8b4a6b;
-  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #b8976a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8b4a6b; }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-.slide-in-right {
-  animation: slideInRight 0.3s ease forwards;
-}
+.fade-in       { animation: fadeIn       0.3s ease forwards; }
+.slide-in-right { animation: slideInRight 0.3s ease forwards; }

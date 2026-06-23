@@ -16,7 +16,7 @@ const isProduction = process.env.NODE_ENV === "production";
 
 app.use(helmet());
 app.use(morgan(isProduction ? "combined" : "dev"));
-app.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001"] }));
+app.use(cors({ origin: [process.env.FRONTEND_URL, "http://localhost:3001"] }));
 app.use(express.json());
 
 const API_PREFIX = "/api";
@@ -26,7 +26,7 @@ app.use(API_PREFIX + "/tasks", verifyToken, taskRoutes);
 app.use(API_PREFIX + "/vendors", verifyToken, vendorRoutes);
 app.use(API_PREFIX + "/notifications", verifyToken, notificationRoutes);
 app.use(API_PREFIX + "/chat", verifyToken, chatRoutes);
-
+ 
 app.get(API_PREFIX + "/health", (_req, res) => {
   res.json({ status: "ok" });
 });
