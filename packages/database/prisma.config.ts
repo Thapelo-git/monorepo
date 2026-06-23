@@ -1,6 +1,6 @@
 import "dotenv/config";
 import path from "node:path";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: path.join("prisma", "schema.prisma"),
@@ -12,6 +12,6 @@ export default defineConfig({
   datasource: {
     // DIRECT_URL bypasses pgBouncer — required for migrations
     // Runtime queries use DATABASE_URL via the pg adapter in index.ts
-    url: env("DIRECT_URL"),
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL || "postgresql://dummy:dummy@dummy:5432/dummy",
   },
 });
