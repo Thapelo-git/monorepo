@@ -25,7 +25,7 @@ function AcceptInviteContent() {
       setTokenError("Missing invite token.");
       setLoading(false);
       return;
-    }
+    } 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     fetch(`${API_URL}/api/auth/invite/${token}`)
       .then((r) => r.json())
