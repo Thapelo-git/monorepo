@@ -7,7 +7,7 @@ import { sendInviteEmail } from "../../lib/email.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
-const APP_URL = process.env.APP_URL || "http://localhost:3000";
+const APP_URL = process.env.APP_URL || "https://monorepo-web-alpha-one.vercel.app";
 
 // Planner self-registration
 router.post("/register", async (req, res) => {
