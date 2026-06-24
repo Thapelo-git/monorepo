@@ -1,19 +1,6 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) return null;
-
-  return nodemailer.createTransport({
-    host,
-    port: parseInt(process.env.SMTP_PORT ?? "587"),
-    secure: process.env.SMTP_PORT === "465",
-    auth: { user, pass },
-  });
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendInviteEmail(opts: {
   to: string;
@@ -21,8 +8,14 @@ export async function sendInviteEmail(opts: {
   weddingName: string;
   plannerName: string;
 }) {
-  const transporter = createTransporter();
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@weddingflow.com";
+  if (!process.env.RESEND_API_KEY) {
+    console.log("\n═══════════════════════════════════════════");
+    console.log("  INVITE EMAIL (RESEND_API_KEY not configured)");
+    console.log("  To:    ", opts.to);
+    console.log("  Link:  ", opts.inviteLink);
+    console.log("═══════════════════════════════════════════\n");
+    return;
+  }
 
   const html = `
 <!DOCTYPE html>
@@ -61,18 +54,8 @@ export async function sendInviteEmail(opts: {
 </body>
 </html>`;
 
-  if (!transporter) {
-    // Dev fallback: print the link to the console
-    console.log("\n═══════════════════════════════════════════");
-    console.log("  INVITE EMAIL (SMTP not configured)");
-    console.log("  To:    ", opts.to);
-    console.log("  Link:  ", opts.inviteLink);
-    console.log("═══════════════════════════════════════════\n");
-    return;
-  }
-
-  await transporter.sendMail({
-    from: `WeddingFlow <${from}>`,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM ?? "WeddingFlow <onboarding@resend.dev>",
     to: opts.to,
     subject: `You're invited to ${opts.weddingName} on WeddingFlow`,
     html,
