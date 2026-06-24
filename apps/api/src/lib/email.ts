@@ -1,6 +1,4 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import nodemailer from "nodemailer";
 
 export async function sendInviteEmail(opts: {
   to: string;
@@ -8,14 +6,32 @@ export async function sendInviteEmail(opts: {
   weddingName: string;
   plannerName: string;
 }) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("\n═══════════════════════════════════════════");
-    console.log("  INVITE EMAIL (RESEND_API_KEY not configured)");
-    console.log("  To:    ", opts.to);
-    console.log("  Link:  ", opts.inviteLink);
-    console.log("═══════════════════════════════════════════\n");
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  console.log("[sendInviteEmail] SMTP_USER:", user ?? "NOT SET");
+  console.log("[sendInviteEmail] SMTP_PASS:", pass ? `SET (${pass.length} chars)` : "NOT SET");
+
+  if (!user || !pass) {
+    console.log("[sendInviteEmail] Aborting — SMTP credentials missing");
+    console.log("  Invite link:", opts.inviteLink);
     return;
   }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+
+  try {
+    await transporter.verify();
+    console.log("[sendInviteEmail] SMTP connection verified OK");
+  } catch (err: any) {
+    console.error("[sendInviteEmail] SMTP verify failed:", err.message);
+    throw new Error(`Email setup error: ${err.message}`);
+  }
+
+  const from = process.env.SMTP_FROM ?? `WeddingFlow <${user}>`;
 
   const html = `
 <!DOCTYPE html>
@@ -54,10 +70,12 @@ export async function sendInviteEmail(opts: {
 </body>
 </html>`;
 
-  await resend.emails.send({
-    from: process.env.RESEND_FROM ?? "WeddingFlow <onboarding@resend.dev>",
+  const info = await transporter.sendMail({
+    from,
     to: opts.to,
     subject: `You're invited to ${opts.weddingName} on WeddingFlow`,
     html,
   });
+
+  console.log("[sendInviteEmail] Sent successfully, messageId:", info.messageId);
 }
